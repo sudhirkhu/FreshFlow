@@ -163,6 +163,20 @@ class CheckoutRequest(BaseModel):
     order_id: str
     origin_url: str
 
+class ReferralStats(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    referral_code: str
+    total_referrals: int
+    total_credits_earned: float
+    referrals: List[Dict]
+
+class ApplyReferralRequest(BaseModel):
+    referral_code: str
+
+class WalletBalance(BaseModel):
+    balance: float
+    currency: str = "USD"
+
 # Helper functions
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
