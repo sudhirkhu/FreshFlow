@@ -1,0 +1,82 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "passed_tests": 12,
+    "success_rate": "100.0%",
+    "timestamp": "2026-02-25T21:53:20.459087"
+  },
+  "detailed_results": [
+    {
+      "test": "Register Customer User",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:17.204174"
+    },
+    {
+      "test": "Get User Profile",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:17.539481"
+    },
+    {
+      "test": "Register Provider User",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:17.991366"
+    },
+    {
+      "test": "Create Provider Profile",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:18.125527"
+    },
+    {
+      "test": "Get Provider Profile",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:18.261351"
+    },
+    {
+      "test": "Get Providers List",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:18.596841"
+    },
+    {
+      "test": "Register Driver User",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:19.075828"
+    },
+    {
+      "test": "Create Driver Profile",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:19.263651"
+    },
+    {
+      "test": "Get Driver Profile",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:19.406002"
+    },
+    {
+      "test": "Create Order",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:19.565465"
+    },
+    {
+      "test": "Get Orders",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:19.717792"
+    },
+    {
+      "test": "Create Payment Checkout",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2026-02-25T21:53:20.458235"
+    }
+  ]
+}
