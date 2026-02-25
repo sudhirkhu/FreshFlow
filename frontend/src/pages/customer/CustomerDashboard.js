@@ -19,6 +19,7 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     fetchOrders();
+    fetchReferralData();
   }, []);
 
   const fetchOrders = async () => {
@@ -29,6 +30,26 @@ export default function CustomerDashboard() {
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReferralData = async () => {
+    try {
+      const [statsRes, balanceRes] = await Promise.all([
+        axios.get(`${API_URL}/referrals/my-stats`),
+        axios.get(`${API_URL}/wallet/balance`)
+      ]);
+      setReferralStats(statsRes.data);
+      setWalletBalance(balanceRes.data.balance);
+    } catch (error) {
+      console.error('Failed to load referral data:', error);
+    }
+  };
+
+  const copyReferralCode = () => {
+    if (referralStats?.referral_code) {
+      navigator.clipboard.writeText(referralStats.referral_code);
+      toast.success('Referral code copied to clipboard!');
     }
   };
 
