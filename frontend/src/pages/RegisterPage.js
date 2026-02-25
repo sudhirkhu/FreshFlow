@@ -17,7 +17,8 @@ export default function RegisterPage() {
     email: '',
     phone: '',
     password: '',
-    role: 'customer'
+    role: 'customer',
+    referral_code: ''
   });
 
   const handleSubmit = async (e) => {
