@@ -465,6 +465,97 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
     )
     return {"message": "Order status updated"}
 
+# Referral endpoints
+@api_router.post("/referrals/apply")
+async def apply_referral_code(referral_req: ApplyReferralRequest, current_user: dict = Depends(get_current_user)):
+    # Check if user already has a referrer
+    user = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0})
+    if user.get("referred_by"):
+        raise HTTPException(status_code=400, detail="You have already used a referral code")
+    
+    # Find the referrer
+    referrer = await db.users.find_one({"referral_code": referral_req.referral_code}, {"_id": 0})
+    if not referrer:
+        raise HTTPException(status_code=404, detail="Invalid referral code")
+    
+    if referrer["id"] == current_user["user_id"]:
+        raise HTTPException(status_code=400, detail="You cannot use your own referral code")
+    
+    # Credit both users
+    REFERRAL_BONUS = 10.0
+    
+    # Update referred user
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {
+            "$set": {"referred_by": referrer["id"]},
+            "$inc": {"wallet_balance": REFERRAL_BONUS}
+        }
+    )
+    
+    # Update referrer
+    await db.users.update_one(
+        {"id": referrer["id"]},
+        {"$inc": {"wallet_balance": REFERRAL_BONUS}}
+    )
+    
+    # Track referral
+    referral_record = {
+        "id": str(uuid.uuid4()),
+        "referrer_id": referrer["id"],
+        "referred_user_id": current_user["user_id"],
+        "bonus_amount": REFERRAL_BONUS,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.referrals.insert_one(referral_record)
+    
+    return {
+        "message": f"Referral code applied! You and {referrer['name']} both received ${REFERRAL_BONUS} credits!",
+        "bonus_amount": REFERRAL_BONUS
+    }
+
+@api_router.get("/referrals/my-stats", response_model=ReferralStats)
+async def get_referral_stats(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get all users referred by this user
+    referred_users = await db.users.find(
+        {"referred_by": current_user["user_id"]},
+        {"_id": 0, "name": 1, "email": 1, "created_at": 1}
+    ).to_list(100)
+    
+    # Get referral records
+    referral_records = await db.referrals.find(
+        {"referrer_id": current_user["user_id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    total_credits = sum(r.get("bonus_amount", 0) for r in referral_records)
+    
+    return ReferralStats(
+        referral_code=user.get("referral_code", ""),
+        total_referrals=len(referred_users),
+        total_credits_earned=total_credits,
+        referrals=[
+            {
+                "name": u["name"],
+                "email": u["email"],
+                "joined_date": u["created_at"]
+            }
+            for u in referred_users
+        ]
+    )
+
+@api_router.get("/wallet/balance", response_model=WalletBalance)
+async def get_wallet_balance(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return WalletBalance(balance=user.get("wallet_balance", 0.0))
+
 # Payment endpoints
 @api_router.post("/payments/create-checkout", response_model=CheckoutSessionResponse)
 async def create_checkout_session(checkout_req: CheckoutRequest, current_user: dict = Depends(get_current_user)):
