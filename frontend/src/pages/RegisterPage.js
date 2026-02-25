@@ -132,6 +132,24 @@ export default function RegisterPage() {
             </div>
 
             <div>
+              <Label htmlFor="referral_code" className="text-slate-700 font-medium">
+                Referral Code (Optional)
+                <span className="text-xs text-emerald-600 ml-2">Get $10 credit!</span>
+              </Label>
+              <Input
+                data-testid="referral-code-input"
+                id="referral_code"
+                type="text"
+                value={formData.referral_code}
+                onChange={(e) => setFormData({ ...formData, referral_code: e.target.value.toUpperCase() })}
+                className="mt-2 rounded-xl h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-sky-500/20 transition-all"
+                placeholder="ABCD1234"
+                maxLength={8}
+              />
+              <p className="text-xs text-slate-500 mt-1">Have a referral code? Both you and your friend get $10!</p>
+            </div>
+
+            <div>
               <Label className="text-slate-700 font-medium mb-3 block">I want to join as:</Label>
               <RadioGroup 
                 data-testid="role-selector"
