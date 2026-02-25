@@ -26,8 +26,26 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const user = await register(formData);
-      toast.success('Account created successfully!');
+      const registerData = { ...formData };
+      const referralCode = registerData.referral_code;
+      delete registerData.referral_code;
+      
+      const user = await register(registerData);
+      
+      // Apply referral code if provided
+      if (referralCode && referralCode.trim()) {
+        try {
+          await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/referrals/apply`, {
+            referral_code: referralCode.trim().toUpperCase()
+          });
+          toast.success('Account created and referral bonus applied!');
+        } catch (refError) {
+          console.error('Referral error:', refError);
+          toast.success('Account created successfully!');
+        }
+      } else {
+        toast.success('Account created successfully!');
+      }
       
       if (user.role === 'provider') {
         navigate('/provider/onboarding');
