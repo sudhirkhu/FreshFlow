@@ -56,6 +56,9 @@ class User(UserBase):
     id: str
     created_at: str
     status: str = "active"
+    referral_code: str = ""
+    referred_by: Optional[str] = None
+    wallet_balance: float = 0.0
 
 class TokenResponse(BaseModel):
     access_token: str
