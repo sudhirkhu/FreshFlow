@@ -1,0 +1,205 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "FreshFlow",
+      "personality": "Efficient, Trustworthy, Modern, Eco-conscious",
+      "metaphor": "Fresh Breeze",
+      "theme": "light"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Outfit, sans-serif",
+        "body": "Plus Jakarta Sans, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-5xl md:text-7xl font-bold tracking-tight",
+        "h2": "text-4xl md:text-5xl font-semibold tracking-tight",
+        "h3": "text-2xl md:text-3xl font-semibold",
+        "body_lg": "text-lg md:text-xl leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground uppercase tracking-wider"
+      },
+      "rules": [
+        "Use 'Outfit' for all headings to establish a modern, geometric brand voice.",
+        "Use 'Plus Jakarta Sans' for all body text for high legibility.",
+        "Never use 'Inter' for headings.",
+        "Headings must use tight tracking (tracking-tight).",
+        "Overlines/Labels must be uppercase with wide tracking."
+      ]
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#0EA5E9",
+          "foreground": "#FFFFFF",
+          "description": "Sky Blue - Freshness, Trust, Water"
+        },
+        "secondary": {
+          "DEFAULT": "#10B981",
+          "foreground": "#FFFFFF",
+          "description": "Mint Green - Eco-friendly, Success, Clean"
+        },
+        "accent": {
+          "DEFAULT": "#6366F1",
+          "foreground": "#FFFFFF",
+          "description": "Soft Indigo - Premium services, Depth"
+        },
+        "background": {
+          "DEFAULT": "#F8FAFC",
+          "paper": "#FFFFFF",
+          "subtle": "#F1F5F9"
+        },
+        "text": {
+          "primary": "#0F172A",
+          "secondary": "#64748B",
+          "muted": "#94A3B8"
+        },
+        "destructive": {
+          "DEFAULT": "#EF4444",
+          "foreground": "#FFFFFF"
+        }
+      },
+      "gradients": {
+        "hero": "bg-gradient-to-br from-sky-50 to-indigo-50",
+        "primary_action": "bg-gradient-to-r from-sky-500 to-blue-600",
+        "card_hover": "hover:bg-sky-50/50"
+      },
+      "restrictions": [
+        "Do NOT use Teal (#14B8A6) for primary CTAs (use Sky Blue).",
+        "Do NOT use pure black (#000000). Use Slate 900 (#0F172A).",
+        "Avoid heavy dark modes; prioritize a 'Clean White' aesthetic."
+      ]
+    },
+    "layout": {
+      "spacing_scale": "Generous (2x standard)",
+      "container": {
+        "desktop": "max-w-7xl mx-auto px-6 md:px-12",
+        "mobile": "px-4"
+      },
+      "border_radius": {
+        "card": "rounded-2xl",
+        "button": "rounded-full",
+        "input": "rounded-xl"
+      },
+      "grid_systems": {
+        "bento_marketing": "grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8",
+        "dashboard_widgets": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
+        "services_grid": "grid grid-cols-2 md:grid-cols-4 gap-4"
+      },
+      "rules": [
+        "Use generous padding (p-6, p-8) inside cards.",
+        "Marketing pages must use 'Lenis' smooth scrolling.",
+        "Dashboards should use a sidebar layout on desktop and bottom nav on mobile.",
+        "Always use 'container' classes for consistent max-width."
+      ]
+    },
+    "components": {
+      "buttons": {
+        "primary": "rounded-full px-8 py-6 font-semibold shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all active:scale-95",
+        "secondary": "rounded-full px-8 py-6 font-semibold bg-white border border-slate-200 hover:bg-slate-50 transition-all",
+        "ghost": "rounded-full hover:bg-slate-100 text-slate-600"
+      },
+      "cards": {
+        "feature": "bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1",
+        "dashboard": "bg-white rounded-xl p-6 border border-slate-100 shadow-sm",
+        "order_status": "bg-white rounded-2xl p-6 border-l-4 border-sky-500 shadow-sm"
+      },
+      "inputs": {
+        "default": "rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500/20 transition-all h-12"
+      },
+      "navigation": {
+        "mobile": "fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 pb-8 safe-area-bottom z-50",
+        "sidebar": "fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-100 p-6 hidden md:flex flex-col z-40"
+      },
+      "visual_enhancers": {
+        "glass": "bg-white/70 backdrop-blur-xl border border-white/20 shadow-sm",
+        "shadows": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+        "patterns": "Use subtle dot patterns or wave SVGs in backgrounds for 'laundry' metaphor."
+      }
+    },
+    "motion": {
+      "libraries": ["framer-motion", "lenis"],
+      "principles": [
+        "Soft, fluid transitions (ease-out, 0.4s).",
+        "Staggered entrance for lists and grids.",
+        "Micro-interactions on all clickable elements (scale down on press).",
+        "Parallax effects on hero images."
+      ]
+    },
+    "media": {
+      "image_style": "Bright, high-key photography. Focus on clean textiles, smiling people, and neatly folded clothes.",
+      "icons": {
+        "library": "lucide-react",
+        "style": "Stroke width 1.5px or 2px, rounded joins."
+      },
+      "assets": {
+        "logo": "Use a text-based logo with a simple icon (e.g., a sparkle or wave).",
+        "images": {
+          "hero_main": {
+            "url": "https://images.pexels.com/photos/4049148/pexels-photo-4049148.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+            "alt": "Neatly stacked pile of fresh colored clothes",
+            "category": "hero"
+          },
+          "service_ironing": {
+            "url": "https://images.pexels.com/photos/28576618/pexels-photo-28576618.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+            "alt": "Ironing board with folded clothes",
+            "category": "service"
+          },
+          "driver_delivery": {
+            "url": "https://images.pexels.com/photos/6867934/pexels-photo-6867934.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+            "alt": "Cheerful delivery person holding packages",
+            "category": "driver"
+          },
+          "happy_customer": {
+            "url": "https://images.unsplash.com/photo-1753900124843-de8323c20f69?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "Happy woman smiling under clear sky",
+            "category": "testimonial"
+          },
+          "laundry_texture": {
+            "url": "https://images.unsplash.com/photo-1501677110325-0b08be6ad95c?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "alt": "White textile texture",
+            "category": "background"
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "rules": [
+        "Ensure text contrast ratio of 4.5:1 on light backgrounds.",
+        "Focus states must be clearly visible (ring-2 ring-sky-500).",
+        "Interactive elements must have aria-labels.",
+        "Support prefers-reduced-motion."
+      ]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react', 'framer-motion', 'clsx', 'tailwind-merge', 'sonner' immediately.",
+    "Implement the Layout Wrapper first: A 'Layout' component that handles the sidebar/bottom-nav based on user role and screen size.",
+    "Use 'Outlet' from react-router-dom for nested routes.",
+    "Create a 'ProtectedRoute' component to handle role-based access (Customer vs Driver vs Provider).",
+    "Use the provided image URLs for the Landing Page and Dashboard placeholders.",
+    "For the Map view, use a placeholder 'div' with a grey/blue map-like background pattern if a real map library (like leaflet) is not yet integrated, or use 'react-leaflet' if possible.",
+    "Strictly follow the color palette. Do not use default Tailwind blue; use the specific Sky Blue (#0EA5E9).",
+    "Use 'Sonner' for all toast notifications."
+  ],
+  "universal_guidelines": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
