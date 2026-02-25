@@ -14,6 +14,8 @@ export default function CustomerDashboard() {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [referralStats, setReferralStats] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   useEffect(() => {
     fetchOrders();
