@@ -217,6 +217,12 @@ async def register(user_data: UserRegister):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_id = str(uuid.uuid4())
+    referral_code = generate_referral_code()
+    
+    # Ensure referral code is unique
+    while await db.users.find_one({"referral_code": referral_code}):
+        referral_code = generate_referral_code()
+    
     user_dict = {
         "id": user_id,
         "email": user_data.email,
@@ -225,6 +231,9 @@ async def register(user_data: UserRegister):
         "phone": user_data.phone,
         "password": hash_password(user_data.password),
         "status": "active",
+        "referral_code": referral_code,
+        "referred_by": None,
+        "wallet_balance": 0.0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
