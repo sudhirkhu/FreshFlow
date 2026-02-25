@@ -119,13 +119,81 @@ export default function CustomerDashboard() {
           <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sky-100 mb-1">Member Since</p>
-                <p className="text-2xl font-bold">2026</p>
+                <p className="text-sky-100 mb-1">Wallet Balance</p>
+                <p className="text-2xl font-bold">${walletBalance.toFixed(2)}</p>
               </div>
-              <TrendingUp className="w-8 h-8" />
+              <Wallet className="w-8 h-8" />
             </div>
           </div>
         </div>
+
+        {/* Referral Section */}
+        {referralStats && (
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 border border-emerald-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                <Gift className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                  Refer Friends, Earn $10
+                </h2>
+                <p className="text-slate-600">Share your code and both of you get $10 credit!</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl p-6 border border-slate-100">
+                <p className="text-sm text-slate-600 mb-2">Your Referral Code</p>
+                <div className="flex items-center gap-3">
+                  <div data-testid="referral-code" className="flex-1 bg-slate-50 rounded-lg px-4 py-3 font-mono text-2xl font-bold text-sky-600 tracking-wider">
+                    {referralStats.referral_code}
+                  </div>
+                  <Button
+                    data-testid="copy-referral-code-btn"
+                    onClick={copyReferralCode}
+                    size="sm"
+                    className="rounded-full bg-sky-500 hover:bg-sky-600"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-slate-100">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">Friends Referred</p>
+                    <p data-testid="total-referrals" className="text-3xl font-bold text-emerald-600">{referralStats.total_referrals}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">Credits Earned</p>
+                    <p data-testid="total-credits-earned" className="text-3xl font-bold text-emerald-600">${referralStats.total_credits_earned.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {referralStats.referrals.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Your Referrals</h3>
+                <div className="space-y-2">
+                  {referralStats.referrals.map((referral, idx) => (
+                    <div key={idx} className="bg-white rounded-lg p-3 border border-slate-100 flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-slate-900">{referral.name}</p>
+                        <p className="text-sm text-slate-600">{referral.email}</p>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {new Date(referral.joined_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Recent Orders */}
         <div>
