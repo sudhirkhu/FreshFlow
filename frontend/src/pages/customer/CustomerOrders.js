@@ -79,6 +79,27 @@ export default function CustomerOrders() {
     }
   };
 
+
+  const requestPickupRide = async (orderId) => {
+    try {
+      const response = await axios.post(`${API_URL}/orders/${orderId}/request-pickup-ride`);
+      toast.success(`Pickup ride requested! Driver ${response.data.driver_name} is on the way (ETA: ${response.data.eta_minutes} mins)`);
+      fetchOrders();
+    } catch (error) {
+      toast.error('Failed to request pickup ride');
+    }
+  };
+
+  const requestDeliveryRide = async (orderId) => {
+    try {
+      const response = await axios.post(`${API_URL}/orders/${orderId}/request-delivery-ride`);
+      toast.success(`Delivery ride requested! Driver ${response.data.driver_name} will deliver in ~${response.data.eta_minutes} mins`);
+      fetchOrders();
+    } catch (error) {
+      toast.error('Failed to request delivery ride');
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-700',
