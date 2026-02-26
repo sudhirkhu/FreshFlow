@@ -136,6 +136,10 @@ class Order(BaseModel):
     status: str
     payment_status: str = "pending"
     notes: Optional[str] = None
+    pickup_ride_id: Optional[str] = None
+    pickup_ride_status: Optional[str] = None
+    delivery_ride_id: Optional[str] = None
+    delivery_ride_status: Optional[str] = None
     created_at: str
     updated_at: str
 
