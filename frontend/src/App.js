@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import CustomerDashboard from '@/pages/customer/CustomerDashboard';
 import CustomerOrders from '@/pages/customer/CustomerOrders';
 import NewOrderPage from '@/pages/customer/NewOrderPage';
