@@ -42,6 +42,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: forgotPasswordEmail
+      });
+      
+      toast.success('Password reset instructions sent to your email!');
+      
+      // For demo purposes, show the reset link
+      if (response.data.reset_link) {
+        toast.info('Demo: Check console for reset link', { duration: 5000 });
+        console.log('Password Reset Link:', response.data.reset_link);
+      }
+      
+      setForgotPasswordOpen(false);
+      setForgotPasswordEmail('');
+    } catch (error) {
+      toast.error('Failed to send reset email. Please try again.');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   return (
     <div data-testid="login-page" className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
