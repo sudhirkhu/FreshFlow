@@ -560,6 +560,147 @@ async def get_wallet_balance(current_user: dict = Depends(get_current_user)):
     
     return WalletBalance(balance=user.get("wallet_balance", 0.0))
 
+# Uber-like Ride endpoints
+@api_router.post("/orders/{order_id}/request-pickup-ride")
+async def request_pickup_ride(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Request a ride for laundry pickup (simulated Uber-like service)"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order["customer_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Simulate ride request
+    ride_id = str(uuid.uuid4())
+    ride_data = {
+        "id": ride_id,
+        "order_id": order_id,
+        "type": "pickup",
+        "pickup_address": order["pickup_address"],
+        "pickup_city": order["pickup_city"],
+        "pickup_state": order["pickup_state"],
+        "pickup_zipcode": order["pickup_zipcode"],
+        "dropoff_address": "Provider Location",  # Would be provider's address
+        "status": "requested",
+        "driver_name": None,
+        "driver_phone": None,
+        "vehicle_info": None,
+        "eta_minutes": None,
+        "ride_cost": 12.50,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.rides.insert_one(ride_data)
+    
+    # Update order with ride info
+    await db.orders.update_one(
+        {"id": order_id},
+        {
+            "$set": {
+                "pickup_ride_id": ride_id,
+                "pickup_ride_status": "requested",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Simulate driver assignment after a moment
+    import random
+    driver_names = ["Mike Johnson", "Sarah Williams", "David Brown", "Lisa Garcia"]
+    ride_data["status"] = "driver_assigned"
+    ride_data["driver_name"] = random.choice(driver_names)
+    ride_data["driver_phone"] = f"(972) 555-{random.randint(1000, 9999)}"
+    ride_data["vehicle_info"] = f"{random.choice(['Toyota', 'Honda', 'Ford'])} {random.choice(['Camry', 'Accord', 'Focus'])}"
+    ride_data["eta_minutes"] = random.randint(5, 15)
+    
+    await db.rides.update_one(
+        {"id": ride_id},
+        {"$set": ride_data}
+    )
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"pickup_ride_status": "driver_assigned"}}
+    )
+    
+    ride_data.pop("_id", None)
+    return ride_data
+
+@api_router.post("/orders/{order_id}/request-delivery-ride")
+async def request_delivery_ride(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Request a ride for laundry delivery (simulated Uber-like service)"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Simulate ride request
+    ride_id = str(uuid.uuid4())
+    ride_data = {
+        "id": ride_id,
+        "order_id": order_id,
+        "type": "delivery",
+        "pickup_address": "Provider Location",
+        "dropoff_address": order["pickup_address"],
+        "dropoff_city": order["pickup_city"],
+        "dropoff_state": order["pickup_state"],
+        "dropoff_zipcode": order["pickup_zipcode"],
+        "status": "requested",
+        "driver_name": None,
+        "driver_phone": None,
+        "vehicle_info": None,
+        "eta_minutes": None,
+        "ride_cost": 12.50,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.rides.insert_one(ride_data)
+    
+    # Update order with ride info
+    await db.orders.update_one(
+        {"id": order_id},
+        {
+            "$set": {
+                "delivery_ride_id": ride_id,
+                "delivery_ride_status": "requested",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Simulate driver assignment
+    import random
+    driver_names = ["Mike Johnson", "Sarah Williams", "David Brown", "Lisa Garcia"]
+    ride_data["status"] = "driver_assigned"
+    ride_data["driver_name"] = random.choice(driver_names)
+    ride_data["driver_phone"] = f"(972) 555-{random.randint(1000, 9999)}"
+    ride_data["vehicle_info"] = f"{random.choice(['Toyota', 'Honda', 'Ford'])} {random.choice(['Camry', 'Accord', 'Focus'])}"
+    ride_data["eta_minutes"] = random.randint(10, 20)
+    
+    await db.rides.update_one(
+        {"id": ride_id},
+        {"$set": ride_data}
+    )
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"delivery_ride_status": "driver_assigned"}}
+    )
+    
+    ride_data.pop("_id", None)
+    return ride_data
+
+@api_router.get("/rides/{ride_id}")
+async def get_ride_status(ride_id: str, current_user: dict = Depends(get_current_user)):
+    """Get ride status"""
+    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    
+    return ride
+
 # Payment endpoints
 @api_router.post("/payments/create-checkout", response_model=CheckoutSessionResponse)
 async def create_checkout_session(checkout_req: CheckoutRequest, current_user: dict = Depends(get_current_user)):
