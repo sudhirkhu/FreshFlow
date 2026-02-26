@@ -124,6 +124,50 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          <div className="mt-4 text-center">
+            <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+              <DialogTrigger asChild>
+                <button
+                  data-testid="forgot-password-link"
+                  className="text-sm text-sky-500 hover:text-sky-600 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Reset Password</DialogTitle>
+                  <DialogDescription>
+                    Enter your email address and we'll send you a link to reset your password.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+                  <div>
+                    <Label htmlFor="reset-email">Email Address</Label>
+                    <Input
+                      data-testid="reset-email-input"
+                      id="reset-email"
+                      type="email"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                      className="mt-2 rounded-xl h-12"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <Button
+                    data-testid="send-reset-link-btn"
+                    type="submit"
+                    disabled={forgotPasswordLoading}
+                    className="w-full rounded-full h-12 bg-gradient-to-r from-sky-500 to-blue-600"
+                  >
+                    {forgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
           <div className="mt-6 text-center">
             <p className="text-slate-600">
               Don't have an account?{' '}
