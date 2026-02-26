@@ -279,6 +279,89 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="User not found")
     return User(**user)
 
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Request a password reset token"""
+    user = await db.users.find_one({"email": request.email}, {"_id": 0})
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If your email is registered, you will receive a password reset link"}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    reset_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token in database
+    await db.password_resets.insert_one({
+        "user_id": user["id"],
+        "token": reset_token,
+        "expires_at": reset_expiry.isoformat(),
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # In production, send email with reset link
+    # For now, return the token (in production this would only be in email)
+    reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
+    
+    # Log for demonstration purposes
+    logger.info(f"Password reset requested for {request.email}. Token: {reset_token}")
+    
+    return {
+        "message": "If your email is registered, you will receive a password reset link",
+        "reset_link": reset_link  # Remove this in production
+    }
+
+@api_router.post("/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Reset password using a valid token"""
+    # Find valid token
+    reset_record = await db.password_resets.find_one({
+        "token": request.token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not reset_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check if token has expired
+    expiry_time = datetime.fromisoformat(reset_record["expires_at"])
+    if datetime.now(timezone.utc) > expiry_time:
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    
+    # Update user password
+    new_password_hash = hash_password(request.new_password)
+    await db.users.update_one(
+        {"id": reset_record["user_id"]},
+        {"$set": {"password": new_password_hash}}
+    )
+    
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"token": request.token},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Password successfully reset. You can now login with your new password"}
+
+@api_router.post("/auth/verify-reset-token")
+async def verify_reset_token(token: str):
+    """Verify if a reset token is valid"""
+    reset_record = await db.password_resets.find_one({
+        "token": token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not reset_record:
+        return {"valid": False}
+    
+    # Check if token has expired
+    expiry_time = datetime.fromisoformat(reset_record["expires_at"])
+    if datetime.now(timezone.utc) > expiry_time:
+        return {"valid": False}
+    
+    return {"valid": True}
+
 # Service Provider endpoints
 @api_router.post("/providers/profile", response_model=ServiceProviderProfile)
 async def create_provider_profile(profile: ServiceProviderCreate, current_user: dict = Depends(get_current_user)):
