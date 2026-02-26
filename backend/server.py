@@ -181,6 +181,13 @@ class WalletBalance(BaseModel):
     balance: float
     currency: str = "USD"
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 # Helper functions
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
