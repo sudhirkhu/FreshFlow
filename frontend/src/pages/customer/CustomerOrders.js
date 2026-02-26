@@ -185,22 +185,66 @@ export default function CustomerOrders() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col justify-between items-end">
+                  <div className="flex flex-col justify-between items-end gap-3">
                     <div className="text-right">
                       <p className="text-sm text-slate-600 mb-1">Total Amount</p>
                       <p className="text-3xl font-bold text-slate-900">${order.total_amount.toFixed(2)}</p>
                     </div>
                     
-                    {order.payment_status === 'pending' && order.status === 'pending' && (
-                      <Button
-                        data-testid={`pay-now-btn-${order.id}`}
-                        onClick={() => handlePayNow(order.id)}
-                        className="rounded-full px-6 py-5 bg-gradient-to-r from-sky-500 to-blue-600 hover:shadow-lg transition-all"
-                      >
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Pay Now
-                      </Button>
-                    )}
+                    <div className="flex flex-col gap-2">
+                      {order.payment_status === 'pending' && order.status === 'pending' && (
+                        <Button
+                          data-testid={`pay-now-btn-${order.id}`}
+                          onClick={() => handlePayNow(order.id)}
+                          className="rounded-full px-6 py-5 bg-gradient-to-r from-sky-500 to-blue-600 hover:shadow-lg transition-all"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Pay Now
+                        </Button>
+                      )}
+                      
+                      {order.payment_status === 'paid' && order.status === 'confirmed' && !order.pickup_ride_id && (
+                        <Button
+                          data-testid={`request-pickup-${order.id}`}
+                          onClick={() => requestPickupRide(order.id)}
+                          className="rounded-full px-6 py-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-lg transition-all"
+                        >
+                          <Car className="w-4 h-4 mr-2" />
+                          Request Pickup Ride
+                        </Button>
+                      )}
+                      
+                      {order.pickup_ride_status === 'driver_assigned' && (
+                        <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200">
+                          <p className="text-xs font-semibold text-emerald-700 mb-1">Pickup Ride Active</p>
+                          <div className="flex items-center gap-2 text-xs text-emerald-600">
+                            <Car className="w-3 h-3" />
+                            <span>Driver on the way</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {order.status === 'ready_for_pickup' && !order.delivery_ride_id && (
+                        <Button
+                          data-testid={`request-delivery-${order.id}`}
+                          onClick={() => requestDeliveryRide(order.id)}
+                          className="rounded-full px-6 py-5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg transition-all"
+                        >
+                          <Car className="w-4 h-4 mr-2" />
+                          Request Delivery
+                        </Button>
+                      )}
+                      
+                      {order.delivery_ride_status === 'driver_assigned' && (
+                        <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-200">
+                          <p className="text-xs font-semibold text-indigo-700 mb-1">Delivery Active</p>
+                          <div className="flex items-center gap-2 text-xs text-indigo-600">
+                            <Car className="w-3 h-3" />
+                            <span>Driver delivering</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
