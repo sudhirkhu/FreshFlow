@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Store } from 'lucide-react';
+import { Plus, Trash2, Store, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -72,11 +72,6 @@ export default function NewOrderPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.provider_id) {
-      toast.error('Please select a provider');
-      return;
-    }
-    
     if (items.some(item => !item.weight || !item.price)) {
       toast.error('Please fill in all item details');
       return;
@@ -95,7 +90,11 @@ export default function NewOrderPage() {
       };
 
       await axios.post(`${API_URL}/orders`, orderData);
-      toast.success('Order created successfully!');
+      toast.success(
+        formData.provider_id
+          ? 'Order created successfully! Pickup is being scheduled.'
+          : 'Order created! We\'re auto-selecting the best provider and scheduling pickup.'
+      );
       navigate('/customer/orders');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create order');
@@ -130,6 +129,24 @@ export default function NewOrderPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Auto-select option */}
+                <div
+                  data-testid="provider-auto-select"
+                  onClick={() => setFormData({ ...formData, provider_id: '' })}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    formData.provider_id === ''
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-slate-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-semibold text-slate-900">Auto-Select Best Match</h3>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-1">
+                    We'll pick the nearest, highest-rated provider based on your location and service needs
+                  </p>
+                </div>
                 {providers.map((provider) => (
                   <div
                     key={provider.user_id}
@@ -321,7 +338,7 @@ export default function NewOrderPage() {
             <Button
               data-testid="create-order-btn"
               type="submit"
-              disabled={submitting || !formData.provider_id}
+              disabled={submitting}
               className="w-full rounded-full h-12 bg-white text-sky-600 hover:bg-slate-50 font-semibold"
             >
               {submitting ? 'Creating Order...' : 'Create Order & Proceed to Payment'}

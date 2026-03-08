@@ -15,8 +15,13 @@ from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 import jwt
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import asyncio
+import sys
 
 ROOT_DIR = Path(__file__).parent
+
+# Add backend dir to path so services package is importable
+sys.path.insert(0, str(ROOT_DIR))
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
@@ -110,7 +115,7 @@ class OrderItem(BaseModel):
     price: float
 
 class OrderCreate(BaseModel):
-    provider_id: str
+    provider_id: Optional[str] = None  # Optional – auto-selects nearest if omitted
     items: List[OrderItem]
     pickup_address: str
     pickup_city: str
@@ -140,6 +145,12 @@ class Order(BaseModel):
     pickup_ride_status: Optional[str] = None
     delivery_ride_id: Optional[str] = None
     delivery_ride_status: Optional[str] = None
+    provider_auto_selected: bool = False
+    uber_delivery_id: Optional[str] = None
+    uber_delivery_status: Optional[str] = None
+    uber_tracking_url: Optional[str] = None
+    receipt_id: Optional[str] = None
+    workflow_status: Optional[str] = None
     created_at: str
     updated_at: str
 
@@ -488,18 +499,20 @@ async def accept_order_as_driver(order_id: str, current_user: dict = Depends(get
 async def create_order(order_data: OrderCreate, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "customer":
         raise HTTPException(status_code=403, detail="Only customers can create orders")
-    
-    provider = await db.service_providers.find_one({"user_id": order_data.provider_id}, {"_id": 0})
-    if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
-    
+
+    # Validate provider if explicitly chosen
+    if order_data.provider_id:
+        provider = await db.service_providers.find_one({"user_id": order_data.provider_id}, {"_id": 0})
+        if not provider:
+            raise HTTPException(status_code=404, detail="Provider not found")
+
     total = sum(item.price for item in order_data.items)
     order_id = str(uuid.uuid4())
-    
+
     order_dict = {
         "id": order_id,
         "customer_id": current_user["user_id"],
-        "provider_id": order_data.provider_id,
+        "provider_id": order_data.provider_id or "",
         "driver_id": None,
         "items": [item.model_dump() for item in order_data.items],
         "total_amount": total,
@@ -512,12 +525,48 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
         "status": "pending",
         "payment_status": "pending",
         "notes": order_data.notes,
+        "provider_auto_selected": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
-    
+
     await db.orders.insert_one(order_dict)
+
+    # Kick off the order workflow asynchronously (non-blocking)
+    asyncio.create_task(_run_order_workflow(order_dict.copy()))
+
+    # Return the order immediately (workflow runs in background)
     return Order(**order_dict)
+
+
+async def _run_order_workflow(order_dict: dict):
+    """Background task that runs the full order workflow pipeline."""
+    from services.order_workflow import process_order
+    try:
+        result = await process_order(db, order_dict)
+        # Persist final workflow status on the order
+        await db.orders.update_one(
+            {"id": order_dict["id"]},
+            {"$set": {
+                "workflow_status": result.get("workflow_status", "unknown"),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
+        logger.info(
+            "Order workflow completed for %s: status=%s, steps=%s",
+            order_dict["id"],
+            result.get("workflow_status"),
+            result.get("steps_completed"),
+        )
+    except Exception as exc:
+        logger.error("Order workflow failed for %s: %s", order_dict["id"], exc)
+        await db.orders.update_one(
+            {"id": order_dict["id"]},
+            {"$set": {
+                "workflow_status": "error",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
 
 @api_router.get("/orders", response_model=List[Order])
 async def get_orders(current_user: dict = Depends(get_current_user)):
@@ -558,6 +607,73 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
         {"$set": {"status": status_update.status, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     return {"message": "Order status updated"}
+
+# Workflow & delivery tracking endpoints
+@api_router.get("/orders/{order_id}/workflow")
+async def get_order_workflow(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the workflow event log for an order."""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    events = await db.workflow_events.find(
+        {"order_id": order_id}, {"_id": 0}
+    ).sort("timestamp", 1).to_list(100)
+
+    return {
+        "order_id": order_id,
+        "workflow_status": order.get("workflow_status"),
+        "provider_auto_selected": order.get("provider_auto_selected", False),
+        "uber_delivery_id": order.get("uber_delivery_id"),
+        "uber_tracking_url": order.get("uber_tracking_url"),
+        "receipt_id": order.get("receipt_id"),
+        "events": events,
+    }
+
+
+@api_router.get("/orders/{order_id}/delivery")
+async def get_order_delivery(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the Uber delivery details for an order."""
+    from services.uber_service import get_delivery_status
+
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    uber_id = order.get("uber_delivery_id")
+    if not uber_id:
+        return {"order_id": order_id, "delivery": None, "message": "No delivery scheduled yet"}
+
+    delivery = await get_delivery_status(db, uber_id)
+    return {"order_id": order_id, "delivery": delivery}
+
+
+@api_router.get("/orders/{order_id}/receipt")
+async def get_order_receipt(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the receipt for an order."""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    receipt_id = order.get("receipt_id")
+    if not receipt_id:
+        return {"order_id": order_id, "receipt": None, "message": "Receipt not generated yet"}
+
+    receipt = await db.receipts.find_one({"id": receipt_id}, {"_id": 0})
+    return {"order_id": order_id, "receipt": receipt}
+
+
+@api_router.get("/notifications")
+async def get_notifications(
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user),
+):
+    """Get recent team notifications (for ops/admin dashboard)."""
+    notifications = await db.notifications.find(
+        {}, {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    return notifications
+
 
 # Referral endpoints
 @api_router.post("/referrals/apply")

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Package, MapPin, Clock, CreditCard, Car, User, Phone } from 'lucide-react';
+import { Package, MapPin, Clock, CreditCard, Car, User, Phone, Truck, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -104,6 +104,7 @@ export default function CustomerOrders() {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-700',
       confirmed: 'bg-blue-100 text-blue-700',
+      pickup_scheduled: 'bg-teal-100 text-teal-700',
       in_progress: 'bg-indigo-100 text-indigo-700',
       ready_for_pickup: 'bg-purple-100 text-purple-700',
       driver_assigned: 'bg-cyan-100 text-cyan-700',
@@ -222,6 +223,25 @@ export default function CustomerOrders() {
                             <span>Driver on the way</span>
                           </div>
                         </div>
+                      )}
+
+                      {order.uber_tracking_url && (
+                        <a
+                          href={order.uber_tracking_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-xs text-sky-600 hover:text-sky-700 font-medium"
+                        >
+                          <Truck className="w-3 h-3" />
+                          Track Uber Pickup
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+
+                      {order.provider_auto_selected && (
+                        <span className="text-xs text-emerald-600 font-medium">
+                          Provider auto-matched
+                        </span>
                       )}
                       
                       {order.status === 'ready_for_pickup' && !order.delivery_ride_id && (
