@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class LaundryServiceAPITester:
-    def __init__(self, base_url="https://cleancare-hub-2.preview.emergentagent.com/api"):
+    def __init__(self, base_url="http://localhost:8001/api"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
@@ -267,7 +267,7 @@ class LaundryServiceAPITester:
         """Test payment checkout creation"""
         checkout_data = {
             "order_id": order_id,
-            "origin_url": "https://cleancare-hub-2.preview.emergentagent.com"
+            "origin_url": "http://localhost:3000"
         }
         
         success, response = self.run_test(
