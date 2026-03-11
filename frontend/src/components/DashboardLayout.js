@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Sparkles, LayoutDashboard, Package, Truck, Store, LogOut, Plus, Briefcase } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Package, Truck, Store, LogOut, Plus, Briefcase, Shield, Users } from 'lucide-react';
 
 export default function DashboardLayout({ children, role }) {
   const navigate = useNavigate();
@@ -30,6 +30,12 @@ export default function DashboardLayout({ children, role }) {
       return [
         { path: '/driver/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/driver/available-jobs', icon: Briefcase, label: 'Available Jobs' }
+      ];
+    } else if (role === 'admin') {
+      return [
+        { path: '/admin/dashboard', icon: Shield, label: 'Dashboard' },
+        { path: '/admin/orders', icon: Package, label: 'All Orders' },
+        { path: '/admin/providers', icon: Store, label: 'Providers' }
       ];
     }
     return [];

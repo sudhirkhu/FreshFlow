@@ -13,6 +13,9 @@ import ProviderOnboarding from '@/pages/provider/ProviderOnboarding';
 import DriverDashboard from '@/pages/driver/DriverDashboard';
 import DriverOnboarding from '@/pages/driver/DriverOnboarding';
 import AvailableJobs from '@/pages/driver/AvailableJobs';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminOrders from '@/pages/admin/AdminOrders';
+import AdminProviders from '@/pages/admin/AdminProviders';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -55,6 +58,16 @@ function App() {
             </ProtectedRoute>
           } />
           
+          <Route path="/admin/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Routes>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="providers" element={<AdminProviders />} />
+              </Routes>
+            </ProtectedRoute>
+          } />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster position="top-center" richColors />

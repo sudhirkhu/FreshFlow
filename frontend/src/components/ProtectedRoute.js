@@ -18,8 +18,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    const redirectPath = user.role === 'customer' ? '/customer/dashboard' : 
-                        user.role === 'provider' ? '/provider/dashboard' : 
+    const redirectPath = user.role === 'customer' ? '/customer/dashboard' :
+                        user.role === 'provider' ? '/provider/dashboard' :
+                        user.role === 'admin' ? '/admin/dashboard' :
                         '/driver/dashboard';
     return <Navigate to={redirectPath} replace />;
   }

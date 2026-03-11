@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 import jwt
 import stripe
+import math
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -79,6 +80,8 @@ class ServiceProviderProfile(BaseModel):
     rating: float = 0.0
     total_orders: int = 0
     status: str = "pending"
+    location: Optional[Dict[str, float]] = None
+    distance_miles: Optional[float] = None
     created_at: str
 
 class ServiceProviderCreate(BaseModel):
@@ -385,14 +388,39 @@ async def create_provider_profile(profile: ServiceProviderCreate, current_user: 
     await db.service_providers.insert_one(profile_dict)
     return ServiceProviderProfile(**profile_dict)
 
+def haversine_miles(lat1, lng1, lat2, lng2):
+    """Calculate distance between two points in miles"""
+    R = 3959  # Earth radius in miles
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
+    return R * 2 * math.asin(math.sqrt(a))
+
 @api_router.get("/providers", response_model=List[ServiceProviderProfile])
 async def get_providers(city: Optional[str] = None):
     query = {"status": "active"}
     if city:
         query["city"] = city
-    
+
     providers = await db.service_providers.find(query, {"_id": 0}).to_list(100)
     return [ServiceProviderProfile(**p) for p in providers]
+
+@api_router.get("/providers/nearby", response_model=List[ServiceProviderProfile])
+async def get_nearby_providers(lat: float, lng: float, radius: float = 20.0):
+    """Get providers sorted by distance from given coordinates"""
+    providers = await db.service_providers.find({"status": "active"}, {"_id": 0}).to_list(100)
+
+    results = []
+    for p in providers:
+        loc = p.get("location")
+        if loc and loc.get("lat") and loc.get("lng"):
+            dist = haversine_miles(lat, lng, loc["lat"], loc["lng"])
+            if dist <= radius:
+                p["distance_miles"] = round(dist, 2)
+                results.append(p)
+
+    results.sort(key=lambda x: x.get("distance_miles", 999))
+    return [ServiceProviderProfile(**p) for p in results]
 
 @api_router.get("/providers/me", response_model=ServiceProviderProfile)
 async def get_my_provider_profile(current_user: dict = Depends(get_current_user)):
@@ -559,6 +587,40 @@ async def update_order_status(order_id: str, status_update: OrderStatusUpdate, c
         {"$set": {"status": status_update.status, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     return {"message": "Order status updated"}
+
+# Admin endpoints
+@api_router.get("/admin/orders")
+async def admin_get_all_orders(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return [Order(**o) for o in orders]
+
+@api_router.get("/admin/stats")
+async def admin_get_stats(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    total_orders = await db.orders.count_documents({})
+    active_orders = await db.orders.count_documents({"status": {"$nin": ["delivered", "cancelled"]}})
+    delivered_orders = await db.orders.count_documents({"status": "delivered"})
+    total_providers = await db.service_providers.count_documents({"status": "active"})
+    total_customers = await db.users.count_documents({"role": "customer"})
+    total_drivers = await db.users.count_documents({"role": "driver"})
+
+    paid_orders = await db.orders.find({"payment_status": "paid"}, {"_id": 0, "total_amount": 1}).to_list(500)
+    total_revenue = sum(o.get("total_amount", 0) for o in paid_orders)
+
+    return {
+        "total_orders": total_orders,
+        "active_orders": active_orders,
+        "delivered_orders": delivered_orders,
+        "total_providers": total_providers,
+        "total_customers": total_customers,
+        "total_drivers": total_drivers,
+        "total_revenue": total_revenue
+    }
 
 # Referral endpoints
 @api_router.post("/referrals/apply")
