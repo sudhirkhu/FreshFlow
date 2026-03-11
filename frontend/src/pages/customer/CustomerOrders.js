@@ -72,8 +72,16 @@ export default function CustomerOrders() {
         order_id: orderId,
         origin_url: originUrl
       });
-      
-      window.location.href = response.data.url;
+
+      const { session_id, checkout_url } = response.data;
+
+      if (session_id && session_id.startsWith('mock_cs_')) {
+        await axios.post(`${API_URL}/payments/confirm-mock/${session_id}`);
+        toast.success('Payment completed successfully!');
+        fetchOrders();
+      } else {
+        window.location.href = checkout_url;
+      }
     } catch (error) {
       toast.error('Failed to initiate payment');
     }

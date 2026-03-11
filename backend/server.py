@@ -33,6 +33,7 @@ ACCESS_TOKEN_EXPIRE = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 10080))
 
 # Stripe
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
+MOCK_PAYMENTS = not STRIPE_API_KEY or STRIPE_API_KEY.startswith("sk_test_placeholder")
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -813,35 +814,43 @@ async def create_checkout_session(checkout_req: CheckoutRequest, current_user: d
         raise HTTPException(status_code=403, detail="Not authorized")
 
     host_url = checkout_req.origin_url
-    success_url = f"{host_url}/customer/orders?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{host_url}/customer/orders"
+    mock_session_id = f"mock_cs_{uuid.uuid4().hex[:24]}"
 
-    stripe.api_key = STRIPE_API_KEY
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{
-            "price_data": {
-                "currency": "usd",
-                "unit_amount": int(order["total_amount"] * 100),
-                "product_data": {
-                    "name": f"FreshFlow Order #{checkout_req.order_id[:8]}"
-                }
-            },
-            "quantity": 1
-        }],
-        mode="payment",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "order_id": checkout_req.order_id,
-            "user_id": current_user["user_id"]
-        }
-    )
+    if MOCK_PAYMENTS:
+        session_id = mock_session_id
+        checkout_url = f"{host_url}/customer/orders?session_id={session_id}"
+    else:
+        success_url = f"{host_url}/customer/orders?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{host_url}/customer/orders"
+
+        stripe.api_key = STRIPE_API_KEY
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": int(order["total_amount"] * 100),
+                    "product_data": {
+                        "name": f"FreshFlow Order #{checkout_req.order_id[:8]}"
+                    }
+                },
+                "quantity": 1
+            }],
+            mode="payment",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "order_id": checkout_req.order_id,
+                "user_id": current_user["user_id"]
+            }
+        )
+        session_id = session.id
+        checkout_url = session.url
 
     transaction_id = str(uuid.uuid4())
     transaction_dict = {
         "id": transaction_id,
-        "session_id": session.id,
+        "session_id": session_id,
         "user_id": current_user["user_id"],
         "order_id": checkout_req.order_id,
         "amount": order["total_amount"],
@@ -854,7 +863,34 @@ async def create_checkout_session(checkout_req: CheckoutRequest, current_user: d
 
     await db.payment_transactions.insert_one(transaction_dict)
 
-    return CheckoutSessionResponse(session_id=session.id, checkout_url=session.url)
+    return CheckoutSessionResponse(session_id=session_id, checkout_url=checkout_url)
+
+@api_router.post("/payments/confirm-mock/{session_id}")
+async def confirm_mock_payment(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Confirm a mock payment (only works when MOCK_PAYMENTS is enabled)"""
+    if not MOCK_PAYMENTS:
+        raise HTTPException(status_code=400, detail="Mock payments not enabled")
+
+    transaction = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if transaction["payment_status"] == "paid":
+        return {"message": "Payment already confirmed", "status": "paid"}
+
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+    order_id = transaction.get("order_id")
+    if order_id:
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {"payment_status": "paid", "status": "confirmed", "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+
+    return {"message": "Mock payment confirmed", "status": "paid", "order_id": order_id}
 
 @api_router.get("/payments/status/{session_id}", response_model=CheckoutStatusResponse)
 async def get_payment_status(session_id: str, current_user: dict = Depends(get_current_user)):
@@ -866,6 +902,15 @@ async def get_payment_status(session_id: str, current_user: dict = Depends(get_c
         return CheckoutStatusResponse(
             status="complete",
             payment_status="paid",
+            amount_total=int(transaction["amount"] * 100),
+            currency=transaction["currency"],
+            metadata=transaction["metadata"]
+        )
+
+    if MOCK_PAYMENTS:
+        return CheckoutStatusResponse(
+            status="open",
+            payment_status="unpaid",
             amount_total=int(transaction["amount"] * 100),
             currency=transaction["currency"],
             metadata=transaction["metadata"]

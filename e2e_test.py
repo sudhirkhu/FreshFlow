@@ -281,6 +281,62 @@ class FreshFlowE2ETest:
         self.check("Provider can list their orders", r.status_code == 200, f"status={r.status_code}")
 
     # =========================================================
+    # PHASE 4b: Mock Payment Flow
+    # =========================================================
+    def test_mock_payment(self):
+        log_section("PHASE 4b: Payment (Mock Mode)")
+
+        # Create checkout session
+        r = requests.post(f"{BASE_URL}/payments/create-checkout",
+            headers=self.auth_header(self.customer_token),
+            json={"order_id": self.order_id, "origin_url": "http://localhost:3000"})
+        self.check("Create checkout session", r.status_code == 200, f"status={r.status_code}")
+
+        if r.status_code == 200:
+            data = r.json()
+            session_id = data["session_id"]
+            self.check("Mock session ID generated", session_id.startswith("mock_cs_"),
+                       f"id={session_id[:20]}...")
+            self.check("Checkout URL returned", data["checkout_url"] is not None)
+
+            # Check payment status (should be unpaid)
+            r = requests.get(f"{BASE_URL}/payments/status/{session_id}",
+                headers=self.auth_header(self.customer_token))
+            self.check("Payment status is unpaid", r.status_code == 200 and r.json()["payment_status"] == "unpaid")
+
+            # Confirm mock payment
+            r = requests.post(f"{BASE_URL}/payments/confirm-mock/{session_id}",
+                headers=self.auth_header(self.customer_token))
+            self.check("Mock payment confirmed", r.status_code == 200, f"status={r.status_code}")
+
+            if r.status_code == 200:
+                data = r.json()
+                self.check("Payment status is paid", data["status"] == "paid")
+
+            # Verify payment status updated
+            r = requests.get(f"{BASE_URL}/payments/status/{session_id}",
+                headers=self.auth_header(self.customer_token))
+            if r.status_code == 200:
+                data = r.json()
+                self.check("Status now shows paid", data["payment_status"] == "paid")
+                self.check("Amount matches order", data["amount_total"] == 2300, f"{data['amount_total']} cents")
+
+            # Verify order status updated to confirmed
+            r = requests.get(f"{BASE_URL}/orders/{self.order_id}",
+                headers=self.auth_header(self.customer_token))
+            if r.status_code == 200:
+                data = r.json()
+                self.check("Order payment_status is paid", data["payment_status"] == "paid")
+                self.check("Order status is confirmed", data["status"] == "confirmed")
+
+            # Double confirm should be idempotent
+            r = requests.post(f"{BASE_URL}/payments/confirm-mock/{session_id}",
+                headers=self.auth_header(self.customer_token))
+            self.check("Double confirm is safe", r.status_code == 200)
+
+            print(f"\n  {Colors.CYAN}Payment Complete! Order confirmed and paid.{Colors.END}")
+
+    # =========================================================
     # PHASE 5: Request Pickup Ride (Uber-like)
     # =========================================================
     def test_request_pickup_ride(self):
@@ -623,6 +679,9 @@ class FreshFlowE2ETest:
         self.test_customer_view_orders()
         self.test_get_order_detail()
         self.test_provider_view_orders()
+
+        # Phase 4b: Payment
+        self.test_mock_payment()
 
         # Phase 5: Pickup Ride
         self.test_request_pickup_ride()
